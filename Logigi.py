@@ -25,14 +25,10 @@ def resolution_logimage(L,C):
     poss_colonnes = possibilite_colonne(C,n)
     T = creation_tableau_reponse(n) # Tableau initial rempli de 2 
     
-    # On remplit le tableau tant qu'on est sûr 
-    
-    # Boucle permettant d'entrer dans le backtrack si le 
-    # tableau n'est pas complété
     Image = backtrack(T,poss_lignes,poss_colonnes)
     
-    #if Image == None :
-    #    return ('erreur')
+    if Image == 'erreur':
+        return ('erreur')
     
     return pylab.imshow(Image, cmap= 'gray_r', interpolation = 'nearest')
 
@@ -78,7 +74,7 @@ def possibilite(Indice,n):
         return [l] 
     
     # Cas 2 : Quand on a déjà rentré toutes les cases noires
-    # on complète les cases restantes en blanc 
+    # on complète les cases restantes en blanc.
     if len(Indice) == 0:      
         return  [[B]*n]
     
@@ -118,7 +114,7 @@ def possibilite(Indice,n):
             
             
 ## Création des listes (pour les lignes et colonnes) 
-## de toutes les possibilités pour le logimage
+## de toutes les possibilités pour le logimage.
 
 # Les deux fonctions créent des listes de listes de listes 
 # de possibilités pour les lignes et les colonnes séparemment. 
@@ -163,11 +159,11 @@ def remplissage_cases_certaines(tableau_reponse, poss_lignes, poss_colonnes,n):
             # si on trouve 0, la case est blanche, 
             # sinon, elle n'est pas certaine et on ne fait rien
             S = sum(poss_lignes[i][k][j] for k in range (p))
-            if S == p and tableau_reponse[i][j] != N :
+            if S == p and tableau_reponse[i][j] == inconnu:
                 tableau_reponse [i][j] = N 
                 modif = True
                 
-            elif S == 0 and tableau_reponse[i][j] != B :
+            elif S == 0 and tableau_reponse[i][j] == inconnu:
                 tableau_reponse [i][j] = B
                 modif = True
                 
@@ -176,11 +172,11 @@ def remplissage_cases_certaines(tableau_reponse, poss_lignes, poss_colonnes,n):
         p = len (poss_colonnes[j])
         for i in range(n):
             S = sum(poss_colonnes[j][k][i] for k in range (p))
-            if S == p and tableau_reponse[i][j] != N :
+            if S == p and tableau_reponse[i][j] == inconnu:
                 tableau_reponse[i][j] = N
                 modif = True
                 
-            elif S == 0 and tableau_reponse[i][j] != B:
+            elif S == 0 and tableau_reponse[i][j] == inconnu:
                 tableau_reponse[i][j] = B
                 modif = True
                 
@@ -190,23 +186,23 @@ def remplissage_cases_certaines(tableau_reponse, poss_lignes, poss_colonnes,n):
 ## Éliminer les listes de possibilités devenues fausses après un premier
 ## remplissage
         
-# On parcourt le tableau, si une case donnée est certaine, toutes
-# les listes de possibilités ne possédant pas cette case sont éliminées.
-
 def elimination_possibilites(tableau_reponse, poss_lignes, 
-							 poss_colonnes, n):
+			     poss_colonnes, n):
+    """On parcourt le tableau, si une case donnée est certaine, toutes
+    les listes de possibilités ne possédant pas cette case sont
+    éliminées."""
 
-    for i in range(n): # Ligne
-        for j in range(n): # Colonne
+    for i in range(n): 
+        for j in range(n): 
             if tableau_reponse[i][j] != inconnu :  
-				# On ne traite pas les cases non sûres (2)
+		# On ne traite pas les cases non sûres (inconnu)
             
                 # On regarde toutes les lignes qui contiennent 
-                # la case considérée
+                # la case considérée.
                 Linter = [] # Liste intermédiaire qui va contenir 
-							# les possibilités conservées
+                # les possibilités conservées
                 for L in poss_lignes[i]: # L: toutes les possibilités 
-										 # pour la ligne d'indice i
+		    # pour la ligne d'indice i
                     if L[j] == tableau_reponse[i][j]:
                         Linter.append(L)
                 poss_lignes[i] = deepcopy(Linter)
@@ -217,22 +213,22 @@ def elimination_possibilites(tableau_reponse, poss_lignes,
                     if C[i] == tableau_reponse[i][j] :
                         Linter.append(C)
                 poss_colonnes[j] = deepcopy(Linter)
-            
-    
-                
+             
                 
                 
 ## Remplissage du tableau
-# On remplit les cases sûres et on élimine les possibilités 
-# non valides tant que le tableau réponse est modifié
 
-def remplissage_tableau(T,poss_lignes,poss_colonnes,n):
-        modif = True
-       
-        while modif:
-            modif = remplissage_cases_certaines(T, poss_lignes, 
-												poss_colonnes, n)     
-            elimination_possibilites(T, poss_lignes, poss_colonnes, n)
+# def remplissage_tableau(T,poss_lignes,poss_colonnes,n):
+#     """On remplit les cases sûres et on élimine les possibilités non
+#     valides tant que le tableau réponse est modifié.
+#     """
+
+#     modif = True
+    
+#     while modif:
+#         modif = remplissage_cases_certaines(T, poss_lignes, 
+# 					    poss_colonnes, n)     
+#         elimination_possibilites(T, poss_lignes, poss_colonnes, n)
     
             
 
@@ -242,16 +238,14 @@ def meilleur_essai(L):
     """Renvoie la plus petite liste de possibilités possédant au 
     moins 2 possibilités."""
     lignes_incertaines = [(i,len(L[i])) \
-							for i in range(len(L)) if len(L[i])!=1]
+			  for i in range(len(L)) if len(L[i])!=1]
     # Recherche du minimum
-    indice, min = lignes_incertaines[0]
+    indice, minimum = lignes_incertaines[0]
     for i,m in lignes_incertaines:
-        if m < min:
-            indice, min = i, m
+        if m < minimum:
+            indice, minimum = i, m
     return indice              
       
-        
-# Lorsqu'il n'y a plus de solution évidente
 
 def est_fini(tableau_reponse, n):
     """Vérifie si le logimage est résolu."""
@@ -285,9 +279,9 @@ def backtrack(tableau_reponse, poss_lignes, poss_colonnes) :
     
     while not er and changement :
         changement = remplissage_cases_certaines(tableau_reponse, 
-										poss_lignes, poss_colonnes, n)
+						 poss_lignes, poss_colonnes, n)
         elimination_possibilites(tableau_reponse, poss_lignes, 
-										poss_colonnes,n)
+				 poss_colonnes,n)
         er = erreur(poss_lignes, poss_colonnes, n)
     res.append([tableau_reponse, poss_lignes, poss_colonnes])
     
@@ -295,7 +289,8 @@ def backtrack(tableau_reponse, poss_lignes, poss_colonnes) :
         print(tableau_reponse)
         return tableau_reponse
         
-    elif not er :
+    elif not er:
+        print('backtrack')
         rang_essais = meilleur_essai(poss_lignes)
         essais = poss_lignes[rang_essais]
         for es in essais:
@@ -400,5 +395,6 @@ Ccrabe = [[2,3],[1,2,2],[2,2,2,5],[2,1,2,3],[2,1,1,1],[2,2,4],[3,10],[6,8],[4,11
 
     
 ##Appel automatique de la fonction
-resolution_logimage(Ltotoro,Ctotoro)
+resolution_logimage(Lg,Cg)
 pylab.show()
+
