@@ -14,9 +14,12 @@ import pylab
 ##############################################
 ##Programme principal : solveur de logimage ##
 ##############################################
-res = []
+
 def resolution_logimage(L,C):
-    global res
+    """Résoud le logimage dont la liste des contraintes sur les lignes
+    est donnée dans L et la liste des contraintes sur les colonnes dans
+    C."""
+
     # Mesure de la taille du logimage
     n = taille(L,C)
     
@@ -25,12 +28,17 @@ def resolution_logimage(L,C):
     poss_colonnes = possibilite_colonne(C,n)
     T = creation_tableau_reponse(n) # Tableau initial rempli de 2 
     
-    Image = backtrack(T,poss_lignes,poss_colonnes)
-    
-    if Image == 'erreur':
+    Image = backtrack(T,poss_lignes,poss_colonnes, L, C)
+
+    print(Image[0]) # Image[0] est un booléen. Image[0] vaut True si
+                    # et seulement si il exite une solution au
+                    # logimage.
+
+    if not Image[0]:
         return ('erreur')
-    
-    return pylab.imshow(Image, cmap= 'gray_r', interpolation = 'nearest')
+
+    # Image[1] est le logimage complété 
+    return pylab.imshow(Image[1], cmap= 'gray_r', interpolation = 'nearest')
 
 
 #########################
@@ -58,14 +66,16 @@ def taille(L,C):
     return n
 
 ## Création d'une liste de possibilités
-# La fonction prend en arguments la liste des indices et 
-# la dimension de la ligne/colonne et renvoie une liste de listes 
-# de toutes les possibilités. On procède par récursivité. 
 
+def possibilite(Indice,n):
+    """La fonction prend en arguments la liste des indices (contraintes)
+    et la dimension de la ligne/colonne et renvoie une liste de listes
+    de toutes les possibilités. On procède par récursivité.
 
-def possibilite(Indice,n):   
-	# Indice: liste d'indices de la ligne ou de la colonne
-	# n: nombre de cases à remplir
+    """
+    # Indice: liste d'indices de la ligne ou de la colonne
+    # n: nombre de cases à remplir
+
     l = []	# l: toutes les listes de solutions
     
     # Cas 1 : On a déjà travaillé sur toutes les cases, 
@@ -101,7 +111,7 @@ def possibilite(Indice,n):
         return [a]
     
     # Si toutes les conditions d'arrêt sont non vérifiées, 
-    # on rentre dans le programme de récursivité   
+    # on rentre dans la boucle de récursivité.
     for i in range(cases_libres+1):                 
         m = n-(i+1+Indice[0])	# Cases restantes après chaque boucle 
         for p in possibilite(Indice[1:],m):   
@@ -116,11 +126,13 @@ def possibilite(Indice,n):
 ## Création des listes (pour les lignes et colonnes) 
 ## de toutes les possibilités pour le logimage.
 
-# Les deux fonctions créent des listes de listes de listes 
-# de possibilités pour les lignes et les colonnes séparemment. 
-
 
 def possibilite_ligne(L,n):   # n = nombre de lignes, L = liste d'indices pour la ligne 
+    """Crée la liste des possibilités pour chaque ligne. Chaque
+    possibilité prend la forme d'une liste. Celles-ci sont elles-mêmes
+    dans une liste pour une ligne donnée, et les liste obtenues pour
+    chaque ligne sont elles mêmes stockées dans un tableau."""
+
     poss_lignes = []
     for k in range (n):
         poss_lignes.append(possibilite(L[k],n))
@@ -128,6 +140,11 @@ def possibilite_ligne(L,n):   # n = nombre de lignes, L = liste d'indices pour l
         
 
 def possibilite_colonne(C,n):   # n = nombre de colonnes, C = liste d'indices pour la colonne  
+    """Crée la liste des possibilités pour chaque colonne. Chaque
+    possibilité prend la forme d'une liste. Celles-csi sont elles-mêmes
+    dans une liste pour une colonne donnée, et les liste obtenues pour
+    chaque colonne sont elles mêmes stockées dans un tableau."""
+
     poss_colonnes = []
     for k in range(n):
         poss_colonnes.append(possibilite(C[k],n))
@@ -145,7 +162,7 @@ def creation_tableau_reponse(n) :
 
 def remplissage_cases_certaines(tableau_reponse, poss_lignes, poss_colonnes,n):
     """Compare toutes les possibilités pour une même ligne 
-    et remplit le tableau si on trouve une case sûre, noire ou blanche"""
+    et remplit le tableau si on trouve une case sûre, noire ou blanche."""
     modif = False 	# Variable-drapeau qui permet de sortir de la boucle 
 					# finale si on n'a plus de modifications
     
@@ -157,7 +174,7 @@ def remplissage_cases_certaines(tableau_reponse, poss_lignes, poss_colonnes,n):
             # pour une ligne donnée : 
             # si on trouve p, il n'y a que des 1 donc la case est noire,
             # si on trouve 0, la case est blanche, 
-            # sinon, elle n'est pas certaine et on ne fait rien
+            # sinon, elle n'est pas certaine et on ne fait rien.
             S = sum(poss_lignes[i][k][j] for k in range (p))
             if S == p and tableau_reponse[i][j] == inconnu:
                 tableau_reponse [i][j] = N 
@@ -200,9 +217,9 @@ def elimination_possibilites(tableau_reponse, poss_lignes,
                 # On regarde toutes les lignes qui contiennent 
                 # la case considérée.
                 Linter = [] # Liste intermédiaire qui va contenir 
-                # les possibilités conservées
+                # les possibilités conservées.
                 for L in poss_lignes[i]: # L: toutes les possibilités 
-		    # pour la ligne d'indice i
+		    # pour la ligne d'indice i.
                     if L[j] == tableau_reponse[i][j]:
                         Linter.append(L)
                 poss_lignes[i] = deepcopy(Linter)
@@ -215,22 +232,60 @@ def elimination_possibilites(tableau_reponse, poss_lignes,
                 poss_colonnes[j] = deepcopy(Linter)
              
                 
-                
-## Remplissage du tableau
+##Vérification
 
-# def remplissage_tableau(T,poss_lignes,poss_colonnes,n):
-#     """On remplit les cases sûres et on élimine les possibilités non
-#     valides tant que le tableau réponse est modifié.
-#     """
+def verif_ligne(tableau, indice, contraintes):
+    """Vérifie si une ligne du tableau est bien correctement complétée."""
+    j = 0
+    n = len(tableau)
+    for c in contraintes:
+        nb_noirs = 0
+        while j < n and tableau[indice][j] == B:
+            j += 1 # On avance jusqu'à la prochaine séquence de noirs
+        while j < n and tableau[indice][j] == N:
+            nb_noirs += 1
+            j += 1 # On compte le nombre de noirs de la séquence
+        if nb_noirs != c or (j < n and tableau[indice][j] != B):
+            return False # On vérifie qu'il est bon et que la séquence
+                         # de noirs est en bout de ligne ou suivie
+                         # d'un blanc.
+    while j < n:
+        if tableau[indice][j] == N:
+            return False
+        j += 1
+    return True
 
-#     modif = True
-    
-#     while modif:
-#         modif = remplissage_cases_certaines(T, poss_lignes, 
-# 					    poss_colonnes, n)     
-#         elimination_possibilites(T, poss_lignes, poss_colonnes, n)
-    
-            
+def verif_colonne(tableau, indice, contraintes):
+    """Vérifie si une colonne du tableau est bien correctement complétée."""
+    i = 0
+    n = len(tableau)
+    for c in contraintes:
+        nb_noirs = 0
+        while i < n and tableau[i][indice] == B:
+            i += 1 # On avance jusqu'à la prochaine séquence de noirs
+        while i < n and tableau[i][indice] == N:
+            nb_noirs += 1
+            i += 1 # On compte le nombre de noirs de la séquence
+        if nb_noirs != c or (i < n and tableau[i][indice] != B):
+            return False
+    while i < n:
+        if tableau[i][indice] == N:
+            return False # On vérifie qu'il est bon et que la séquence
+                         # de noirs est en bout de colonne ou suivie
+                         # d'un blanc.
+        i += 1
+    return True
+
+def verif_logimage(tableau, L, C):
+    """Vérifie si le logimage est correctement complété."""
+    n = len(tableau)
+    for i in range(n):
+        if not verif_ligne(tableau, i, L[i]):
+            return False
+        if not verif_colonne(tableau, i, C[i]):
+            return False
+    return True
+
 
 ##Backtracking
 
@@ -269,9 +324,14 @@ def erreur(poss_lignes, poss_colonnes, n):
     return False
 
 
-def backtrack(tableau_reponse, poss_lignes, poss_colonnes) :
-    global res
-    
+def backtrack(tableau_reponse, poss_lignes, poss_colonnes, L, C) :
+    """Construit le logimage à partir de la liste des possibilités de
+    ligne et de colonnes. Si un choix est nécessaire, une méthode de
+    backtracking permet d'explorer les différents choix et de retourner
+    une solution correcte."""
+
+    # Le résultat prend la forme d'un couple constitué d'un booléen
+    # représentant la validité de la solution et du tableau complété.
     n = taille(poss_lignes, poss_colonnes)
     er = erreur(poss_lignes, poss_colonnes, n)
     
@@ -283,11 +343,13 @@ def backtrack(tableau_reponse, poss_lignes, poss_colonnes) :
         elimination_possibilites(tableau_reponse, poss_lignes, 
 				 poss_colonnes,n)
         er = erreur(poss_lignes, poss_colonnes, n)
-    res.append([tableau_reponse, poss_lignes, poss_colonnes])
     
     if est_fini(tableau_reponse, n):
         print(tableau_reponse)
-        return tableau_reponse
+        if verif_logimage(tableau_reponse, L, C):
+            return (True, tableau_reponse)
+        else:
+            return (False, tableau_reponse)
         
     elif not er:
         print('backtrack')
@@ -300,41 +362,16 @@ def backtrack(tableau_reponse, poss_lignes, poss_colonnes) :
             l = deepcopy(poss_lignes)
             c = deepcopy(poss_colonnes)
             l[rang_essais] = [es]
+
             remplissage_cases_certaines(t, l, c, n)
             elimination_possibilites(t, l, c, n)
             
             print("t=",t)
-            b = backtrack(t, l, c)
-            if b is not None:
+            b = backtrack(t, l, c, L, C)
+            if b[0]:
                 return b
-    return None
+    return (False, tableau_reponse) 
             
-        
-        
-
-"""def backtracking(tableau_reponse,poss_lignes,poss_colonnes,n):
-    test_lignes=deepcopy(poss_lignes)
-    test_colonnes = deepcopy(poss_colonnes)
-    tableau_test=deepcopy(tableau_reponse)
-    
-    x=meilleur_essai(test_lignes)
-    A=test_lignes[x]
-    A=[A[0]]
-    remplissage_tableau(tableau_test,test_lignes,test_colonnes,n)
-    
-    if est_fini(tableau_test):
-        return tableau_test
-    
-    
-    if erreur(test_lignes,test_colonnes):
-        poss_lignes[x].pop(0)
-        backtracking(tableau_reponse,poss_lignes,poss_colonnes)
-        
-    if est_fini(tableau_test) == False :
-        backtracking(tableau_test,test_lignes,test_colonnes)
-
-"""
-
 #########################
 ## Logimage à résoudre ##
 #########################
@@ -381,7 +418,7 @@ Cb=[[2,1,3],[1,1],[1,1,2,2],[1,1,1],[1,1,1,1],[4,1,1],[1,2,1],[1,1,1],[1,1,1,1],
 
 #3eme essai
 Lg = [[1],[2,1],[],[2,1],[2,1],[1,1,1],[1,1,1],[1,1],[1,1,1,1],[1,1,1,1]]
-Cg = [[1,1,2],[1],[1,1,2,2],[1],[1,1,1],[2],[2,2],[1,1],[1,1],[1,1]]
+Cg = [[1,1,2],[1],[1,1,2,2],[1],[1,1,1],[2],[2,1],[1,1],[1,1],[1,1]]
 
 Lmarylin = [[9],[7,1],[5,2,2],[4,2,4,10],[3,1,7,4],[2,2,4,2],[2,4,3,2],[2,4,2,3],[1,3,2,2,3],[1,2,4,2],[1,2,1],[1,1,1],[1,1,6,8],[3,3,3,2],[2,3,2,1],[1,1,7,7,1],[2,1,2,1,2,2],[3,3,6,7,1],[5,6,1,1,8],[8,1,1,1,5],[3,1,1,1,1],[1,3,1],[1,7,1],[3,3,4,1],[2,3,2,2,1,1],[2,5,1,2],[3,2,2,1,3,4,1],[4,2,2,1,10,1],[1,3,3,1,3,3,2],[2,6,1,8,1],[3,3,2,6,2],[4,4,4,3,1],[14,7],[12,2,2,5],[12,9,5]]
 
